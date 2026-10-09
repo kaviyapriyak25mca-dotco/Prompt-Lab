@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Document Retrieval Agent | AI-Powered RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header / Navbar -->
+    <header class="header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <path d="M9 10h6"/>
+            <path d="M9 14h4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="logo-title">Academic RAG Agent</h1>
+          <span class="logo-subtitle">Intelligent Academic Document Retrieval & Grounding System</span>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="stat-pill" id="statDocsPill">
+          <span class="stat-dot"></span>
+          <span id="statDocsCount">5 Documents</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-value" id="statChunksCount">54</span> Chunks Indexed
+        </div>
+        <button class="btn btn-outline-sm" id="btnSettingsToggle" title="Configure Cloud LLM / Top-K">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Settings
+        </button>
+        <button class="btn btn-outline-sm" id="btnResetCorpus" title="Restore Default Academic Corpus">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Settings Drawer / Panel -->
+    <div class="settings-panel hidden" id="settingsPanel">
+      <div class="settings-content">
+        <div class="settings-group">
+          <label for="geminiKeyInput">Google Gemini API Key (Optional)</label>
+          <input type="password" id="geminiKeyInput" placeholder="AIzaSy... (Leave empty to use high-precision local engine)" />
+          <span class="settings-hint">The agent includes a built-in deterministic fact engine. Entering a Gemini key switches to generative cloud synthesis with grounding verification.</span>
+        </div>
+        <div class="settings-group">
+          <label for="topKSlider">Context Chunks Retrieved: <span id="topKVal">5</span></label>
+          <input type="range" id="topKSlider" min="2" max="10" value="5" />
+        </div>
+        <button class="btn btn-primary-sm" id="btnSaveSettings">Apply Settings</button>
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Left Sidebar: Document Management & Upload -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="section-title-row">
+            <h2>Document Repository</h2>
+            <span class="badge badge-accent" id="docCountBadge">5 Files</span>
+          </div>
+          
+          <!-- Upload Dropzone -->
+          <div class="upload-dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="file-input-hidden" />
+            <div class="dropzone-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p class="dropzone-text"><strong>Drag & Drop</strong> or <span class="browse-link">browse</span></p>
+            <span class="dropzone-hint">Supports PDF, DOCX, TXT</span>
+            <div class="upload-progress hidden" id="uploadProgress">
+              <div class="spinner-sm"></div>
+              <span>Processing & chunking...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document List -->
+        <div class="sidebar-section doc-list-section">
+          <div class="section-title-row">
+            <span class="subheading">Active Academic Documents</span>
+          </div>
+          <div class="doc-list" id="docList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center / Right: Chat & Response Workspace -->
+      <main class="content-workspace">
+        <!-- Preset Scenario Buttons -->
+        <div class="preset-scenarios">
+          <span class="preset-label">Test Queries:</span>
+          <div class="preset-chips-scroll">
+            <button class="chip" data-query="What are the primary textbooks and dynamic programming topics in CS301?">
+              📚 Syllabus & Textbooks
+            </button>
+            <button class="chip" data-query="How is grading calculated under the revised 2025-2026 regulations?">
+              📊 Relative Grading Scheme
+            </button>
+            <button class="chip" data-query="Can attendance below 75% be condoned, and under what conditions?">
+              ⚖️ Attendance Condonation (65%)
+            </button>
+            <button class="chip" data-query="What is the deadline for regular course registration and the late fee penalty for Fall 2025?">
+              📅 Registration Deadlines & Fees
+            </button>
+            <button class="chip" data-query="What calculators are allowed in exams and what is the penalty for possessing a mobile phone?">
+              🚫 Malpractice & Allowed Calculators
+            </button>
+            <button class="chip" data-query="What is the minimum attendance required and does the 2023 zero-condonation rule still apply in 2025?">
+              ⚡ Policy Conflict Resolution
+            </button>
+          </div>
+        </div>
+
+        <!-- Query Input Area -->
+        <div class="query-box-card">
+          <div class="query-input-wrapper">
+            <textarea id="queryInput" placeholder="Ask any question regarding syllabus topics, examination rules, attendance condonation, deadlines, or college circulars..." rows="2"></textarea>
+            <button class="btn btn-primary" id="btnSubmitQuery">
+              <span class="btn-text">Retrieve & Answer</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Results Area -->
+        <div class="results-area" id="resultsArea">
+          <!-- Initial Placeholder State -->
+          <div class="placeholder-state" id="placeholderState">
+            <div class="placeholder-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <path d="M11 8v6"/>
+                <path d="M8 11h6"/>
+              </svg>
+            </div>
+            <h3>Ready for Academic Queries</h3>
+            <p>Type a question or select one of the sample test scenarios above to demonstrate hybrid retrieval, source selection, RAG synthesis, and factual grounding validation.</p>
+          </div>
+
+          <!-- Loading State -->
+          <div class="loading-state hidden" id="loadingState">
+            <div class="pulsing-loader">
+              <div class="pulse-circle"></div>
+              <div class="pulse-circle"></div>
+              <div class="pulse-circle"></div>
+            </div>
+            <p id="loadingMsg">Retrieving relevant sections & analyzing regulatory hierarchy...</p>
+          </div>
+
+          <!-- Answer Presentation Container -->
+          <div class="answer-card hidden" id="answerCard">
+            <!-- Header bar with Authoritative Source & Engine info -->
+            <div class="answer-header">
+              <div class="source-authority-tag" id="authorityBadge">
+                <span class="authority-dot"></span>
+                <span class="authority-title" id="primaryDocTitle">Academic Regulations 2025</span>
+                <span class="authority-year" id="primaryDocYear">AY 2025-2026</span>
+              </div>
+              <div class="engine-badge" id="engineModeBadge">Grounded Fact Engine</div>
+            </div>
+
+            <!-- Regulatory Conflict Alert Banner (Conditional) -->
+            <div class="conflict-alert-banner hidden" id="conflictBanner">
+              <div class="conflict-alert-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="conflict-alert-body">
+                <h4 id="conflictTopic">Active Policy Conflict Resolved</h4>
+                <div class="conflict-comparison">
+                  <div class="conflict-cell current">
+                    <span class="cell-tag">Active Regulation (Preserved)</span>
+                    <p id="conflictActiveText"></p>
+                  </div>
+                  <div class="conflict-cell older">
+                    <span class="cell-tag">Superseded Ordinance (Deprecated)</span>
+                    <p id="conflictOlderText"></p>
+                  </div>
+                </div>
+                <div class="conflict-resolution-note" id="conflictResolutionText"></div>
+              </div>
+            </div>
+
+            <!-- Grounded Answer Body -->
+            <div class="answer-body" id="answerText">
+              <!-- Rendered answer content -->
+            </div>
+
+            <!-- Grounding & Factual Validation Meter -->
+            <div class="validation-container">
+              <div class="validation-header">
+                <div class="validation-title-col">
+                  <span class="validation-label">Response Factual Validation & Grounding Audit</span>
+                  <span class="validation-status-text" id="validationStatusText">Fully Verified</span>
+                </div>
+                <div class="validation-score-badge" id="validationScoreBadge">
+                  <span id="validationScoreVal">100%</span>
+                  <span class="score-sub">Supported</span>
+                </div>
+              </div>
+              <div class="validation-meter-bar">
+                <div class="meter-fill" id="meterFill" style="width: 100%;"></div>
+              </div>
+
+              <!-- Claims Breakdown Toggle -->
+              <details class="claims-accordion" id="claimsDetails">
+                <summary>
+                  <span>Inspect Sentence-by-Sentence Grounding (<span id="totalClaimsCount">4</span> claims)</span>
+                  <span class="chevron">▼</span>
+                </summary>
+                <div class="claims-list" id="claimsList">
+                  <!-- Dynamically populated claims -->
+                </div>
+              </details>
+            </div>
+
+            <!-- Source Citations Section -->
+            <div class="citations-section">
+              <h3 class="section-title">Evidentiary Source Citations</h3>
+              <div class="citations-grid" id="citationsGrid">
+                <!-- Dynamically populated citations -->
+              </div>
+            </div>
+
+            <!-- Retrieved Chunks Raw Inspector Toggle -->
+            <div class="raw-context-section">
+              <button class="btn btn-ghost-sm" id="btnToggleRawContext">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+                <span>Inspect All Top-K Retrieved Context Chunks</span>
+              </button>
+              <div class="raw-chunks-container hidden" id="rawChunksContainer">
+                <div class="raw-chunks-list" id="rawChunksList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Document Chunk Modal -->
+  <div class="modal-overlay hidden" id="chunkModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalDocTitle">Document Chunks Preview</h3>
+        <button class="btn-close" id="btnCloseModal">✕</button>
+      </div>
+      <div class="modal-body" id="modalChunksBody">
+        <!-- Chunks list -->
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
